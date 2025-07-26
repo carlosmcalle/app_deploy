@@ -1,95 +1,73 @@
 import streamlit as st
-import tensorflow as tf
-import numpy as np
-from PIL import Image
-from pathlib import Path
-import plotly.express as px
 
-# --- CONFIGURACIÓN ---
-class_names = ['other_activities', 'safe_driving', 'talking_phone', 'texting_phone', 'turning']
+st.set_page_config(
+    page_title="Sistema Inteligente de Transporte",
+    page_icon="🧠",
+    layout="centered"
+)
 
-@st.cache_resource
-def load_model():
-    model_path = Path(__file__).parents[1] / "models" / "model_module_2.keras"
-    try:
-        model = tf.keras.models.load_model(model_path)
-        return model
-    except Exception as e:
-        st.error(f"Error cargando el modelo: {e}")
-        return None
+st.title("🧠 Sistema Inteligente Integrado para Transporte")
 
-def preprocess_image(image: Image.Image):
-    image = image.convert("RGB")
-    image = image.resize((64, 64))
-    image_array = np.array(image)  # ¡NO dividir por 255!
-    image_array = np.expand_dims(image_array, axis=0)
-    return image_array
+st.markdown("""
+Bienvenido al sistema inteligente de transporte, una herramienta desarrollada con aprendizaje profundo para mejorar **la eficiencia operativa**, **la seguridad vial** y **la experiencia del usuario** en una empresa de transporte.
+""")
 
-# --- INTERFAZ ---
-st.title("🚗 Clasificación de Actividades del Conductor")
-st.markdown("Este módulo detecta si el conductor está realizando alguna actividad riesgosa.")
+st.markdown("""
+Este sistema se compone de tres módulos principales:
+- 📈 **Predicción de Demanda de Transporte**
+- 📷 **Clasificación de Conducción Distractiva**
+- 🎯 **Sistema de Recomendación de Destinos de Viaje**
+""")
 
-model = load_model()
-if model is None:
-    st.stop()
+st.markdown("---")
 
-# Subida de imagen
-uploaded_file = st.file_uploader("📷 Sube una imagen del conductor", type=["jpg", "jpeg", "png"])
+# Explicación de cada módulo
+with st.expander("📈 Módulo 1: Predicción de Demanda de Transporte"):
+    st.markdown("""
+Este módulo utiliza modelos de series de tiempo para anticipar la demanda de transporte en rutas específicas durante los próximos 30 días. Esto permite planificar mejor los recursos, como personal y vehículos.
+- Analiza patrones históricos.
+- Identifica estacionalidades y tendencias.
+- Optimiza la planeación operativa.
+""")
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="📸 Imagen cargada", use_container_width=True)
+with st.expander("📷 Módulo 2: Clasificación de Conducción Distractiva"):
+    st.markdown("""
+Este módulo utiliza imágenes para identificar comportamientos distractores en conductores, como el uso del celular o la somnolencia. Así se mejora la seguridad vial en la operación de transporte.
+- Clasifica imágenes en cinco categorías.
+- Detecta riesgos como uso del teléfono.
+- Genera alertas de conducción insegura.
+""")
 
-    # Procesamiento
-    processed_img = preprocess_image(image)
+with st.expander("🎯 Módulo 3: Sistema de Recomendación de Destinos de Viaje"):
+    st.markdown("""
+Este módulo recomienda destinos de viaje personalizados a los usuarios, utilizando su historial de viajes y preferencias pasadas. Aumenta la satisfacción del cliente y la fidelización.
+- Basado en interacciones previas.
+- Aprende de los hábitos de cada usuario.
+- Sugiere rutas relevantes y atractivas.
+""")
 
-    # Predicción
-    predictions = model.predict(processed_img)
-    predicted_class = class_names[np.argmax(predictions)]
-    confidence = np.max(predictions) * 100
-    
-    class_pred = {
-        "other_activities": "Otras actividades",
-        "safe_driving": "Conducción segura",
-        "talking_phone": "Hablando por teléfono",
-        "texting_phone": "Escribiendo en el celular",
-        "turning": "Girando"
-    }.get(predicted_class)
+st.markdown("---")
 
-    st.subheader("📊 Resultado de Clasificación")
-    st.write(f"**Actividad Detectada:** `{class_pred}`")
-    st.write(f"**Confianza del modelo:** `{confidence:.2f}%`")
+col1, col2 = st.columns(2)
+with col1:
+    st.link_button("🎥 ¿Cómo usar?", "https://www.youtube.com/watch?v=tu_video_de_ejemplo")
+with col2:
+    st.link_button("📄 Reporte Técnico", "https://medium.com/@dcastrot/aplicaciones-en-sistemas-de-recomendación-e-imágenes-c79df14e1d83")
+st.markdown("---")
 
-    if predicted_class == "talking_phone":
-        st.error("📱⚠️ El conductor está hablando por teléfono. Esto representa una distracción peligrosa.")
-    elif predicted_class == "texting_phone":
-        st.error("💬⚠️ El conductor está escribiendo en el celular. Alta probabilidad de accidente por distracción visual y manual.")
-    elif predicted_class == "safe_driving":
-        st.success("✅ Conducción segura detectada. El conductor está enfocado en la vía.")
-    elif predicted_class == "other_activities":
-        st.warning("🔍 El conductor está realizando otra actividad que podría implicar distracción. Se recomienda monitorear.")
-    elif predicted_class == "turning":
-        st.info("↩️ El conductor está realizando un giro. Aunque es una acción esperada, requiere atención en maniobras.")
-    else:
-        st.info("ℹ️ Actividad desconocida o no clasificada.")
+# Navegación entre módulos
+st.markdown("## 🔍 Ir a un módulo")
+col1, col2, col3 = st.columns(3)
 
-    with st.expander("Ver probabilidades por clase"):
-        prob_values = predictions[0]
-        prob_data = {
-            "Actividad": class_names,
-            "Probabilidad": prob_values
-        }
-        
-        fig = px.bar(
-            prob_data,
-            x="Probabilidad",
-            y="Actividad",
-            orientation='h',
-            text=[f"{p:.2%}" for p in prob_values],
-            labels={"Actividad": "Clase", "Probabilidad": "Probabilidad"},
-            title="Distribución de Probabilidades por Clase"
-        )
-        fig.update_traces(marker_color='steelblue', textposition='outside')
-        fig.update_layout(xaxis_range=[0, 1], yaxis={'categoryorder':'total ascending'})
-        st.plotly_chart(fig, use_container_width=True)
-        
+with col1:
+    st.link_button("🚌 Módulo 1", "https://appdemandatransporte-txpxeoaqe7t6elvabs9lpp.streamlit.app")
+
+with col2:
+    st.link_button("🚗 Módulo 2", "https://apptrabajo3mod2rna-aqye8ewn24u5rnrnhtbrmf.streamlit.app")
+
+with col3:
+    st.link_button("✈️ Módulo 3", "https://apptrabajo3mod1rna-ebx6xjx3vffvx8j4fhwhpe.streamlit.app")
+st.markdown("---")
+
+# Footer o mensaje de cierre
+st.info("Este sistema ha sido desarrollado como una solución integral de inteligencia artificial para empresas del sector transporte. ¡Explora cada módulo y mejora tu operación!")
